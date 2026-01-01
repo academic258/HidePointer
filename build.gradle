@@ -11,7 +11,6 @@ base {
 }
 
 repositories {
-    // 新增 Maven Central，如需添加 JNA 依赖
     mavenCentral()
 }
 
@@ -20,9 +19,6 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-    // ### 可选：如果编译报错缺少JNA，取消下面这行的注释 ###
-    // implementation "net.java.dev.jna:jna:5.13.0"
 }
 
 processResources {
@@ -49,16 +45,13 @@ jar {
         rename { "${it}_${inputs.properties.archivesName}"}
     }
 
-    // ### 关键修复：确保资源文件夹被打包 ###
+    // 包含资源文件（fabric.mod.json等）
     from(sourceSets.main.resources) {
         include "**"
-        // 保持模板结构，重命名时排除这些资源文件
-        exclude "**/*.java" // 确保不包含源代码
-    }
-
-    // ### 关键修复：显式包含编译输出的类文件 ###
-    from(sourceSets.main.output) {
-        include "**"
+        // 排除可能重复的类文件
+        exclude "**/*.class"
+        // 设置重复处理策略
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
 }
 
