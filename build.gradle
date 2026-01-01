@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.8-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
     id 'maven-publish'
 }
 
@@ -11,6 +11,7 @@ base {
 }
 
 repositories {
+    // 新增 Maven Central，如需添加 JNA 依赖
     mavenCentral()
 }
 
@@ -19,16 +20,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    
-    // 如果编译时需要 JNA，保留 implementation 但不 include
-    implementation "net.java.dev.jna:jna:5.13.0"
-    
-    configurations.all {
-        resolutionStrategy {
-            force "net.java.dev.jna:jna:5.13.0"
-            force "net.java.dev.jna:jna-platform:5.13.0"
-        }
-    }
+
+    // ### 可选：如果编译报错缺少JNA，取消下面这行的注释 ###
+    // implementation "net.java.dev.jna:jna:5.13.0"
 }
 
 processResources {
@@ -49,23 +43,33 @@ java {
 }
 
 jar {
+    inputs.property "archivesName", project.base.archivesName
+
     from("LICENSE") {
-        rename { "${it}_${project.base.archivesName}"}
+        rename { "${it}_${inputs.properties.archivesName}"}
     }
+
+    // ### 关键修复：确保资源文件夹被打包 ###
     from(sourceSets.main.resources) {
         include "**"
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        // 保持模板结构，重命名时排除这些资源文件
+        exclude "**/*.java" // 确保不包含源代码
+    }
+
+    // ### 关键修复：显式包含编译输出的类文件 ###
+    from(sourceSets.main.output) {
+        include "**"
     }
 }
 
-// 发布配置
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
             from components.java
         }
     }
     repositories {
-        // 这里可以添加你要发布到的Maven仓库
+        // 发布仓库配置保持不变
     }
 }
