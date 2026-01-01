@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "hidepointer",
+  "version": "1.0.0",
+  "name": "HidePointer",
+  "description": "尝试通过指令解决PojavLauncher中外接鼠标指针不隐藏的问题。",
+  "authors": [
+    "Academic"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/hidepointer/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.academic.hidepointer.HidePointer"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
