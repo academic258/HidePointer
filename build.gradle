@@ -20,16 +20,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     
-    // 如果 PojavLauncher 环境已有 JNA，完全移除 JNA 依赖
-    // 如果编译需要，只保留 implementation 但不 include
-    implementation "net.java.dev.jna:jna:5.13.0"
-    
-    configurations.all {
-        resolutionStrategy {
-            force "net.java.dev.jna:jna:5.13.0"
-            force "net.java.dev.jna:jna-platform:5.13.0"
-        }
-    }
+    // 完全移除 JNA 依赖，依赖 PojavLauncher 环境提供的 JNA
 }
 
 processResources {
