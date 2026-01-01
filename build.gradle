@@ -1,6 +1,6 @@
 plugins {
     id 'fabric-loom' version '1.8-SNAPSHOT'
-    id 'maven-publish'
+    id 'maven-publishing'
 }
 
 version = project.mod_version
@@ -19,8 +19,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-    // 只添加依赖但不包含在jar中
+    
+    // 如果 PojavLauncher 环境已有 JNA，完全移除 JNA 依赖
+    // 如果编译需要，只保留 implementation 但不 include
     implementation "net.java.dev.jna:jna:5.13.0"
     
     configurations.all {
@@ -52,22 +53,26 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.base.archivesName}"}
     }
-    // 关键修复：将资源文件夹（src/main/resources）的内容复制到Jar文件根目录
     from(sourceSets.main.resources) {
         include "**"
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
 }
 
-remapJar {
-    // 添加这个配置以处理嵌套Jar的问题
-    at "META-INF/jars/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar"
-}
+// 完全移除错误的 remapJar 配置部分
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            from components.java
+            artifact(remapJar) {
+                builtBy remapJar
+            }
+            artifact(remapSourcesJar) {
+                builtBy remapSourcesJar
+            }
         }
+    }
+    repositories {
+        // 根据需要添加发布仓库
     }
 }
