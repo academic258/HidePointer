@@ -1,6 +1,6 @@
 plugins {
     id 'fabric-loom' version '1.8-SNAPSHOT'
-    id 'maven-publishing'
+    id 'maven-publish'
 }
 
 version = project.mod_version
@@ -20,7 +20,15 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     
-    // 完全移除 JNA 依赖，依赖 PojavLauncher 环境提供的 JNA
+    // 如果编译时需要 JNA，保留 implementation 但不 include
+    implementation "net.java.dev.jna:jna:5.13.0"
+    
+    configurations.all {
+        resolutionStrategy {
+            force "net.java.dev.jna:jna:5.13.0"
+            force "net.java.dev.jna:jna-platform:5.13.0"
+        }
+    }
 }
 
 processResources {
@@ -50,20 +58,14 @@ jar {
     }
 }
 
-// 完全移除错误的 remapJar 配置部分
-
+// 发布配置
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact(remapJar) {
-                builtBy remapJar
-            }
-            artifact(remapSourcesJar) {
-                builtBy remapSourcesJar
-            }
+            from components.java
         }
     }
     repositories {
-        // 根据需要添加发布仓库
+        // 这里可以添加你要发布到的Maven仓库
     }
 }
