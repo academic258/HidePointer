@@ -1,0 +1,37 @@
+name: Extract mod.zip
+on: [pull_request, push]
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Extract mod.zip to repository root
+        run: |
+          # 检查mod.zip是否存在
+          if [ ! -f "mod.zip" ]; then
+            echo "❌ Error: mod.zip not found in repository root!"
+            echo "Available files:"
+            ls -la
+            exit 1
+          fi
+          
+          echo "📦 Found mod.zip, starting extraction..."
+          
+          # 显示zip文件信息
+          echo "📊 Zip file details:"
+          unzip -l mod.zip | head -20
+          
+          # 解压到当前目录（仓库根目录）
+          echo "🚀 Extracting mod.zip to repository root..."
+          unzip -o mod.zip
+          
+          # 清理压缩包（可选）
+          # echo "🧹 Cleaning up..."
+          # rm mod.zip
+          
+          echo "✅ Extraction complete!"
+          echo "📁 Current directory contents:"
+          ls -la
