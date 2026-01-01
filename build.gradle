@@ -1,0 +1,68 @@
+plugins {
+    id 'fabric-loom' version '1.8-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    implementation "net.java.dev.jna:jna:5.13.0"
+    include "net.java.dev.jna:jna:5.13.0"
+    
+    configurations.all {
+        resolutionStrategy {
+            force "net.java.dev.jna:jna:5.13.0"
+            force "net.java.dev.jna:jna-platform:5.13.0"
+        }
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName}"}
+    }
+    // 关键修复：将资源文件夹（src/main/resources）的内容复制到Jar文件根目录
+    from(sourceSets.main.resources) {
+        include "**"
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
