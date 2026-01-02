@@ -45,12 +45,9 @@ jar {
         rename { "${it}_${inputs.properties.archivesName}"}
     }
 
-    // 包含资源文件（fabric.mod.json等）
     from(sourceSets.main.resources) {
         include "**"
-        // 排除可能重复的类文件
         exclude "**/*.class"
-        // 设置重复处理策略
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
 }
@@ -61,8 +58,5 @@ publishing {
             artifactId = project.archives_base_name
             from components.java
         }
-    }
-    repositories {
-        // 发布仓库配置保持不变
     }
 }
