@@ -16,73 +16,92 @@ public abstract class MouseMixin {
     @Shadow @Final private MinecraftClient client;
     @Shadow private double cursorDeltaX;
     @Shadow private double cursorDeltaY;
-
-    private double lastCursorX = 0;
-    private double lastCursorY = 0;
+    
+    // 新增：中心位置跟踪
+    private double virtualCenterX = 0;
+    private double virtualCenterY = 0;
+    private boolean needsInitialCenter = true;
+    
+    // 新增：平滑处理
+    private double smoothedDeltaX = 0;
+    private double smoothedDeltaY = 0;
+    private static final double SMOOTH_FACTOR = 0.3;
 
     @Inject(method = "updateMouse", at = @At("HEAD"))
     private void onUpdateMouseHead(CallbackInfo ci) {
-        // 只在我们的模式启用且游戏就绪时工作
         if (!HidePointer.rawInputEnabled || client.getWindow() == null || client.player == null) {
-            // 重置记录，防止模式切换时出现跳跃
-            if (!HidePointer.rawInputEnabled) {
-                lastCursorX = 0;
-                lastCursorY = 0;
-            }
+            needsInitialCenter = true; // 重置
             return;
         }
 
         long window = client.getWindow().getHandle();
+        int width = client.getWindow().getWidth();
+        int height = client.getWindow().getHeight();
         
-        // 1. 获取当前绝对光标位置
+        // 初始化虚拟中心（仅第一次）
+        if (needsInitialCenter) {
+            virtualCenterX = width / 2.0;
+            virtualCenterY = height / 2.0;
+            needsInitialCenter = false;
+            
+            // 尝试将实际光标移到中心（不一定成功，但尝试）
+            GLFW.glfwSetCursorPos(window, virtualCenterX, virtualCenterY);
+        }
+        
+        // 获取当前实际光标位置
         double[] xPos = new double[1];
         double[] yPos = new double[1];
         GLFW.glfwGetCursorPos(window, xPos, yPos);
         double currentX = xPos[0];
         double currentY = yPos[0];
-
-        // 2. 初始化第一帧位置
-        if (lastCursorX == 0 && lastCursorY == 0) {
-            lastCursorX = currentX;
-            lastCursorY = currentY;
-            return; // 第一帧不计算增量
-        }
-
-        // 3. 计算原始增量 (delta)
-        double deltaX = currentX - lastCursorX;
-        double deltaY = currentY - lastCursorY;
-
-        // 4. 应用灵敏度并存储增量（关键步骤：替换引擎原本的计算）
-        this.cursorDeltaX = deltaX * HidePointer.sensitivity;
-        this.cursorDeltaY = deltaY * HidePointer.sensitivity;
-
-        // 5. 【核心】将光标"困"在窗口中央区域
-        int width = client.getWindow().getWidth();
-        int height = client.getWindow().getHeight();
-        double centerX = width / 2.0;
-        double centerY = height / 2.0;
-
-        // 边界值：距离中心100像素
-        double boundary = 100.0;
-        boolean shouldRecenter = false;
         
-        // 检查是否超出边界
-        if (Math.abs(currentX - centerX) > boundary) {
-            shouldRecenter = true;
-        }
-        if (Math.abs(currentY - centerY) > boundary) {
-            shouldRecenter = true;
-        }
+        // === 核心修正：计算相对于虚拟中心的即时偏移 ===
+        double rawDeltaX = currentX - virtualCenterX;
+        double rawDeltaY = currentY - virtualCenterY;
         
-        // 如果超出边界，将其拉回中心
-        if (shouldRecenter) {
-            GLFW.glfwSetCursorPos(window, centerX, centerY);
-            currentX = centerX;
-            currentY = centerY;
+        // 调试记录
+        HidePointer.lastDeltaX = rawDeltaX;
+        HidePointer.lastDeltaY = rawDeltaY;
+        
+        // 平滑处理（减少抖动）
+        smoothedDeltaX = smoothedDeltaX * (1 - SMOOTH_FACTOR) + rawDeltaX * SMOOTH_FACTOR;
+        smoothedDeltaY = smoothedDeltaY * (1 - SMOOTH_FACTOR) + rawDeltaY * SMOOTH_FACTOR;
+        
+        // === 关键：立即应用旋转，无延迟 ===
+        // 这里直接修改游戏用于旋转的delta值
+        this.cursorDeltaX = smoothedDeltaX * HidePointer.sensitivity;
+        this.cursorDeltaY = smoothedDeltaY * HidePointer.sensitivity;
+        
+        // === 将虚拟中心向鼠标方向移动，模拟"光标跟随" ===
+        // 这解决了"鼠标不动还转"的问题
+        double followSpeed = 0.7; // 跟随速度（0-1）
+        virtualCenterX = virtualCenterX * followSpeed + currentX * (1 - followSpeed);
+        virtualCenterY = virtualCenterY * followSpeed + currentY * (1 - followSpeed);
+        
+        // === 尝试将实际光标拉向虚拟中心（不一定成功）===
+        // 如果系统允许，这会让光标更接近中心
+        double pullStrength = 0.3; // 拉回力度
+        double targetX = currentX * (1 - pullStrength) + virtualCenterX * pullStrength;
+        double targetY = currentY * (1 - pullStrength) + virtualCenterY * pullStrength;
+        
+        // 检查是否显著偏离
+        double distance = Math.sqrt(
+            Math.pow(currentX - virtualCenterX, 2) + 
+            Math.pow(currentY - virtualCenterY, 2)
+        );
+        
+        // 只有偏离较大时才尝试拉回，避免抖动
+        if (distance > 50.0) {
+            GLFW.glfwSetCursorPos(window, targetX, targetY);
         }
-
-        // 6. 记录当前位置供下一帧使用
-        lastCursorX = currentX;
-        lastCursorY = currentY;
+    }
+    
+    @Inject(method = "updateMouse", at = @At("TAIL"))
+    private void onUpdateMouseTail(CallbackInfo ci) {
+        // 可选：在帧结束后重置delta，防止累积
+        if (!HidePointer.rawInputEnabled) {
+            smoothedDeltaX = 0;
+            smoothedDeltaY = 0;
+        }
     }
 }
