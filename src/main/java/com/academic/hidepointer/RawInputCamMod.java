@@ -4,7 +4,6 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
 
 public class RawInputCamMod implements ClientModInitializer {
     // 核心开关：是否启用原始输入视角控制
@@ -28,9 +27,10 @@ public class RawInputCamMod implements ClientModInitializer {
                     }
                     return 1;
                 })
-                .then(ClientCommandManager.argument("sensitivity", net.minecraft.command.argument.FloatArgumentType.floatArg(0.01f, 5.0f))
+                // 修正：使用正确的参数类型 - 在1.21.4中可能是DoubleArgumentType
+                .then(ClientCommandManager.argument("sensitivity", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01, 5.0))
                     .executes(context -> {
-                        sensitivity = context.getArgument("sensitivity", Float.class);
+                        sensitivity = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "sensitivity");
                         context.getSource().sendFeedback(Text.literal("§7[RawInputCam] §6灵敏度已设置为: §e" + sensitivity));
                         return 1;
                     })
