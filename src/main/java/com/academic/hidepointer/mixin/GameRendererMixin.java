@@ -9,13 +9,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
-    // 这个注入点确保旋转在渲染前已经应用
+    // 修正方法签名：参数必须与目标方法 renderWorld 完全一致
     @Inject(method = "renderWorld", at = @At(
         value = "INVOKE",
         target = "Lnet/minecraft/client/render/Camera;update(Lnet/minecraft/world/BlockView;Lnet/minecraft/entity/Entity;ZZF)V"
     ))
     private void onBeforeCameraUpdate(float tickDelta, long limitTime, MatrixStack matrices, CallbackInfo ci) {
-        // 这里可以确保鼠标输入已经被处理
-        // 在标准模式中，MouseMixin已经设置了cursorDeltaX/Y
+        // 注意：这里不需要做任何事情，只是为了确保注入点存在
+        // MouseMixin 已经处理了旋转逻辑
     }
 }
