@@ -3,19 +3,16 @@
   "id": "hidepointer",
   "version": "1.0.0",
   "name": "HidePointer",
-  "description": "尝试通过指令解决PojavLauncher中外接鼠标指针不隐藏的问题。",
-  "authors": [
-    "Academic"
-  ],
+  "description": "尝试通过指令和Mixin解决PojavLauncher中光标融合问题",
+  "authors": ["Academic"],
   "contact": {},
   "license": "MIT",
   "icon": "assets/hidepointer/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": [
-      "com.academic.hidepointer.HidePointer"
-    ]
+    "client": ["com.academic.hidepointer.HidePointer"]
   },
+  "mixins": ["hidepointer.mixins.json"],
   "depends": {
     "fabricloader": ">=0.16.9",
     "minecraft": "~1.21.4",
