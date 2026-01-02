@@ -6,53 +6,58 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.minecraft.text.Text;
 
 public class HidePointer implements ClientModInitializer {
-    public static boolean rawInputEnabled = false;
-    public static double sensitivity = 0.002; // 更科学的灵敏度范围
+    // 标准模式开关
+    public static boolean standardModeEnabled = false;
+    // 旋转灵敏度 (标准值通常在0.1-0.2)
+    public static double sensitivity = 0.15;
     
-    // 调试统计
-    public static double lastDeltaX = 0;
-    public static double lastDeltaY = 0;
+    // 调试信息
+    public static int centerResetCount = 0;
+    public static double lastRawDeltaX = 0;
+    public static double lastRawDeltaY = 0;
 
     @Override
     public void onInitializeClient() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            dispatcher.register(ClientCommandManager.literal("rawcam")
+            // 标准模式切换指令
+            dispatcher.register(ClientCommandManager.literal("stdcam")
                 .executes(context -> {
-                    rawInputEnabled = !rawInputEnabled;
-                    String status = rawInputEnabled ? "§a启用" : "§c禁用";
+                    standardModeEnabled = !standardModeEnabled;
+                    String status = standardModeEnabled ? "§a标准模式启用" : "§c标准模式禁用";
                     context.getSource().sendFeedback(Text.literal(
                         "§7[HidePointer] " + status + " §7(灵敏度: §e" + sensitivity + "§7)"
                     ));
-                    if (rawInputEnabled) {
-                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §b测试：缓慢移动鼠标看视角是否跟手"));
+                    if (standardModeEnabled) {
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6严格按标准流程：锁定->读取->旋转->重置"));
+                        centerResetCount = 0; // 重置计数
                     }
                     return 1;
                 })
             );
             
-            // 精细灵敏度调整
-            for (double sens : new double[]{0.0005, 0.001, 0.002, 0.004, 0.008}) {
-                final double finalSens = sens;
-                dispatcher.register(ClientCommandManager.literal("sens" + (int)(sens*10000))
-                    .executes(context -> {
-                        sensitivity = finalSens;
-                        context.getSource().sendFeedback(Text.literal(
-                            "§7[HidePointer] §6灵敏度: §e" + sensitivity
-                        ));
-                        return 1;
-                    })
-                );
-            }
+            // 灵敏度精细调整
+            dispatcher.register(ClientCommandManager.literal("stdsens")
+                .then(ClientCommandManager.literal("vlow").executes(c -> { sensitivity = 0.08; sendSens(c); return 1; }))
+                .then(ClientCommandManager.literal("low").executes(c -> { sensitivity = 0.12; sendSens(c); return 1; }))
+                .then(ClientCommandManager.literal("medium").executes(c -> { sensitivity = 0.15; sendSens(c); return 1; }))
+                .then(ClientCommandManager.literal("high").executes(c -> { sensitivity = 0.20; sendSens(c); return 1; }))
+                .then(ClientCommandManager.literal("vhigh").executes(c -> { sensitivity = 0.25; sendSens(c); return 1; }))
+            );
             
             // 调试信息
-            dispatcher.register(ClientCommandManager.literal("rawcamdebug")
+            dispatcher.register(ClientCommandManager.literal("stddebug")
                 .executes(context -> {
                     context.getSource().sendFeedback(Text.literal(
-                        String.format("§7[HidePointer] 最后增量: X=%.3f, Y=%.3f", lastDeltaX, lastDeltaY)
+                        String.format("§7[HidePointer] 中心重置次数: %d | 最后增量: X=%.2f, Y=%.2f", 
+                            centerResetCount, lastRawDeltaX, lastRawDeltaY)
                     ));
                     return 1;
                 })
             );
         });
+    }
+    
+    private void sendSens(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
+        source.sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
     }
 }
