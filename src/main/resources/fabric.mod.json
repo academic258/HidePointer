@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "id": "rawinputcam",
+  "id": "hidepointer",
   "version": "1.0.0",
-  "name": "RawInputCam",
-  "description": "绕过PojavLauncher光标问题，直接使用原始鼠标输入控制视角",
+  "name": "HidePointer",
+  "description": "尝试通过原始输入方案解决PojavLauncher鼠标视角问题",
   "authors": ["Academic"],
   "contact": {},
   "license": "MIT",
   "icon": "assets/hidepointer/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": ["com.academic.hidepointer.RawInputCamMod"]
+    "client": ["com.academic.hidepointer.HidePointer"]
   },
-  "mixins": ["rawinputcam.mixins.json"],
+  "mixins": ["hidepointer.mixins.json"],
   "depends": {
     "fabricloader": ">=0.16.9",
     "minecraft": "~1.21.4",
