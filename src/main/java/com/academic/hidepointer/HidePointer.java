@@ -6,15 +6,16 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.minecraft.text.Text;
 
 public class HidePointer implements ClientModInitializer {
-    // 核心开关：是否启用原始输入视角控制
     public static boolean rawInputEnabled = false;
-    // 鼠标灵敏度
-    public static double sensitivity = 0.15;
+    public static double sensitivity = 0.002; // 更科学的灵敏度范围
+    
+    // 调试统计
+    public static double lastDeltaX = 0;
+    public static double lastDeltaY = 0;
 
     @Override
     public void onInitializeClient() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            // 主开关指令
             dispatcher.register(ClientCommandManager.literal("rawcam")
                 .executes(context -> {
                     rawInputEnabled = !rawInputEnabled;
@@ -23,35 +24,34 @@ public class HidePointer implements ClientModInitializer {
                         "§7[HidePointer] " + status + " §7(灵敏度: §e" + sensitivity + "§7)"
                     ));
                     if (rawInputEnabled) {
-                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §b移动鼠标以转动视角。"));
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §b测试：缓慢移动鼠标看视角是否跟手"));
                     }
                     return 1;
                 })
             );
             
-            // 灵敏度调整指令（三档）
-            dispatcher.register(ClientCommandManager.literal("rawcamsens")
-                .then(ClientCommandManager.literal("high")
+            // 精细灵敏度调整
+            for (double sens : new double[]{0.0005, 0.001, 0.002, 0.004, 0.008}) {
+                final double finalSens = sens;
+                dispatcher.register(ClientCommandManager.literal("sens" + (int)(sens*10000))
                     .executes(context -> {
-                        sensitivity = 0.25;
-                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6高灵敏度已设置"));
+                        sensitivity = finalSens;
+                        context.getSource().sendFeedback(Text.literal(
+                            "§7[HidePointer] §6灵敏度: §e" + sensitivity
+                        ));
                         return 1;
                     })
-                )
-                .then(ClientCommandManager.literal("medium")
-                    .executes(context -> {
-                        sensitivity = 0.15;
-                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6中灵敏度已设置"));
-                        return 1;
-                    })
-                )
-                .then(ClientCommandManager.literal("low")
-                    .executes(context -> {
-                        sensitivity = 0.08;
-                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6低灵敏度已设置"));
-                        return 1;
-                    })
-                )
+                );
+            }
+            
+            // 调试信息
+            dispatcher.register(ClientCommandManager.literal("rawcamdebug")
+                .executes(context -> {
+                    context.getSource().sendFeedback(Text.literal(
+                        String.format("§7[HidePointer] 最后增量: X=%.3f, Y=%.3f", lastDeltaX, lastDeltaY)
+                    ));
+                    return 1;
+                })
             );
         });
     }
