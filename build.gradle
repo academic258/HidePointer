@@ -6,8 +6,8 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-base {
-    archivesName = project.archives_base_name
+ base {
+    archivesName = "rawinputcam"  // 修改这里
 }
 
 repositories {
