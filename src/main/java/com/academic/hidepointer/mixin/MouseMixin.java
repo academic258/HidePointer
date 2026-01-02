@@ -86,4 +86,24 @@ public abstract class MouseMixin {
         // 注意：这个调用可能被系统限制，但必须尝试
         try {
             GLFW.glfwSetCursorPos(window, centerX, centerY);
-            HidePointer.centerResetCount++;
+            HidePointer.centerResetCount++; // 计数成功重置次数
+        } catch (Exception e) {
+            // 系统可能不允许频繁设置光标位置
+            // 这是PojavLauncher环境的主要限制点
+        }
+        
+        // 记录最后已知位置
+        lastKnownX = centerX; // 理论上光标现在在中心
+        lastKnownY = centerY;
+    }
+    
+    @Inject(method = "updateMouse", at = @At("TAIL"))
+    private void onUpdateMouseTail(CallbackInfo ci) {
+        // 可选：在帧结束时可以做一些清理
+        if (!HidePointer.standardModeEnabled) {
+            // 确保delta被清除，避免残留
+            this.cursorDeltaX = 0;
+            this.cursorDeltaY = 0;
+        }
+    }
+}
