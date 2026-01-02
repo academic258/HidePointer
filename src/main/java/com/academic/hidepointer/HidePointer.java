@@ -8,32 +8,53 @@ import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 public class HidePointer implements ClientModInitializer {
+    // 实验模式开关
+    public static boolean experimentalMode = false;
+    
     @Override
     public void onInitializeClient() {
-        // 注册客户端指令 /hidepointer 和它的别名 /hp
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(ClientCommandManager.literal("hidepointer")
                 .executes(context -> {
-                    return executeHidePointer(context.getSource());
+                    return toggleCursorMode(context.getSource());
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("hp")
+            
+            // 状态查询指令
+            dispatcher.register(ClientCommandManager.literal("hidepointerstatus")
                 .executes(context -> {
-                    return executeHidePointer(context.getSource());
+                    context.getSource().sendFeedback(Text.literal(
+                        "§7[HidePointer] 实验模式: " + 
+                        (experimentalMode ? "§a开启" : "§7关闭")
+                    ));
+                    return 1;
                 })
             );
         });
     }
 
-    private int executeHidePointer(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
+    private int toggleCursorMode(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
         MinecraftClient client = MinecraftClient.getInstance();
         long window = client.getWindow().getHandle();
-
-        // 核心操作：尝试通过GLFW禁用光标（将其锁定并隐藏）
-        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-
-        // 向玩家发送反馈
-        source.sendFeedback(Text.literal("§7[HidePointer] §f已尝试锁定/隐藏鼠标指针。"));
+        
+        // 切换实验模式
+        experimentalMode = !experimentalMode;
+        
+        // 始终尝试标准API
+        try {
+            GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        } catch (Exception e) {
+            // 静默失败
+        }
+        
+        // 反馈
+        if (experimentalMode) {
+            source.sendFeedback(Text.literal("§7[HidePointer] §a实验模式已开启。尝试光标居中融合。"));
+            source.sendFeedback(Text.literal("§7[HidePointer] §e移动鼠标，观察光标是否更'跟手'。"));
+        } else {
+            source.sendFeedback(Text.literal("§7[HidePointer] §7实验模式已关闭。"));
+        }
+        
         return 1;
     }
 }
