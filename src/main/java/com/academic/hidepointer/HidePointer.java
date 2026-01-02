@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.text.Text;
+import com.mojang.brigadier.context.CommandContext;
 
 public class HidePointer implements ClientModInitializer {
     // 标准模式开关
@@ -37,11 +38,36 @@ public class HidePointer implements ClientModInitializer {
             
             // 灵敏度精细调整
             dispatcher.register(ClientCommandManager.literal("stdsens")
-                .then(ClientCommandManager.literal("vlow").executes(c -> { sensitivity = 0.08; sendSens(c); return 1; }))
-                .then(ClientCommandManager.literal("low").executes(c -> { sensitivity = 0.12; sendSens(c); return 1; }))
-                .then(ClientCommandManager.literal("medium").executes(c -> { sensitivity = 0.15; sendSens(c); return 1; }))
-                .then(ClientCommandManager.literal("high").executes(c -> { sensitivity = 0.20; sendSens(c); return 1; }))
-                .then(ClientCommandManager.literal("vhigh").executes(c -> { sensitivity = 0.25; sendSens(c); return 1; }))
+                .then(ClientCommandManager.literal("vlow")
+                    .executes(context -> { 
+                        sensitivity = 0.08; 
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
+                        return 1; 
+                    }))
+                .then(ClientCommandManager.literal("low")
+                    .executes(context -> { 
+                        sensitivity = 0.12; 
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
+                        return 1; 
+                    }))
+                .then(ClientCommandManager.literal("medium")
+                    .executes(context -> { 
+                        sensitivity = 0.15; 
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
+                        return 1; 
+                    }))
+                .then(ClientCommandManager.literal("high")
+                    .executes(context -> { 
+                        sensitivity = 0.20; 
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
+                        return 1; 
+                    }))
+                .then(ClientCommandManager.literal("vhigh")
+                    .executes(context -> { 
+                        sensitivity = 0.25; 
+                        context.getSource().sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
+                        return 1; 
+                    }))
             );
             
             // 调试信息
@@ -55,9 +81,5 @@ public class HidePointer implements ClientModInitializer {
                 })
             );
         });
-    }
-    
-    private void sendSens(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
-        source.sendFeedback(Text.literal("§7[HidePointer] §6标准模式灵敏度: §e" + sensitivity));
     }
 }
